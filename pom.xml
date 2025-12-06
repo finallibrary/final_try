@@ -86,11 +86,11 @@
             <groupId>org.jacoco</groupId>
             <artifactId>jacoco-maven-plugin</artifactId>
             <version>0.8.12</version>
-            <configuration>
-    <excludes>
+             <!-- <configuration>
+  <excludes>
         <exclude>exception/*</exclude>
     </excludes>
-</configuration>
+</configuration>-->
 
             <executions>
                 <execution>
@@ -101,8 +101,8 @@
                 </execution>
                 
                 <execution>
-                    <id>report</id>
-                    <phase>test</phase>
+                    <id>generate-report</id>
+                    <phase>verify</phase>
                     <goals>
                         <goal>report</goal>
                     </goals>
