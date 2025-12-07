@@ -1,45 +1,45 @@
 import java.util.*;
-import io.github.cdimascio.dotenv.Dotenv;
+import java.util.List;
 import java.time.LocalDate;
+import javax.swing.*;
+import java.awt.*;
+import io.github.cdimascio.dotenv.Dotenv;
+
 import model.*;
 import service.*;
+import model.ConsoleArt;
 
 public class Main {
-	
     private static final int BORROW_DAYS = 28;
 
     public static void main(String[] args) {
         Scanner sc = new Scanner(System.in);
 
-        // ======= Default Books =======
+        // ======= Default Data =======
         Book b1 = new Book("Java Basics", "James Gosling", "001");
         Book b2 = new Book("Python Intro", "Guido Rossum", "002");
         Book b3 = new Book("C++ Fundamentals", "Bjarne Stroustrup", "003");
         Book b4 = new Book("Data Structures", "Mark Allen", "004");
         Book b5 = new Book("Algorithms", "Robert Sedgewick", "005");
         Book b6 = new Book("Machine Learning", "Tom Mitchell", "006");
-        List<Book> books = new ArrayList<>(Arrays.asList(b1,b2,b3,b4,b5,b6));
+        List<Book> books = new ArrayList<>(Arrays.asList(b1, b2, b3, b4, b5, b6));
 
-        // ======= Default CDs =======
         CD cd1 = new CD("Classical Hits", "Beethoven", "CD001");
         CD cd2 = new CD("Rock Classics", "Queen", "CD002");
         CD cd3 = new CD("Jazz Essentials", "Miles Davis", "CD003");
         CD cd4 = new CD("Pop Top", "Taylor Swift", "CD004");
         List<CD> cds = new ArrayList<>(Arrays.asList(cd1, cd2, cd3, cd4));
 
-        // ======= Default Users =======
         List<User> users = new ArrayList<>();
         User u1 = new User("Noor", "halawad257@gmail.com");
         User u2 = new User("Hala", "s12217844@stu.najah.edu");
         User u3 = new User("Hala", "halaawwad455@gmail.com");
         User u4 = new User("Sara", "sara@gmail.com");
-        users.addAll(Arrays.asList(u1,u2,u3,u4));
+        users.addAll(Arrays.asList(u1, u2, u3, u4));
 
-        // ======= Services =======
         FineService fineService = new FineService();
         LoanService loanService = new LoanService();
 
-        // ======= Dotenv and Email Service =======
         Dotenv dotenv = Dotenv.load();
         String emailUser = dotenv.get("EMAIL_USERNAME");
         String emailPass = dotenv.get("EMAIL_PASSWORD");
@@ -49,16 +49,14 @@ public class Main {
         EmailService emailService = new EmailService(emailUser, emailPass);
         MediaEmailNotifier notifier = new MediaEmailNotifier(emailService);
 
-        // ======= Admin =======
         Admin admin = new Admin(adminUsername, adminPassword);
 
-        // ======= Borrow Books & CDs Automatically =======
+        // Auto create some overdue loans for testing
         Loan l1 = loanService.createLoan(b1, u1);
         Loan l2 = loanService.createLoan(cd1, u2);
         Loan l3 = loanService.createLoan(b2, u3);
         Loan l4 = loanService.createLoan(cd2, u3);
 
-        // تعديل المواعيد للقروض لتوليد غرامات
         try {
             var field = Loan.class.getDeclaredField("dueDate");
             field.setAccessible(true);
@@ -66,340 +64,408 @@ public class Main {
             field.set(l2, LocalDate.now().minusDays(8));
             field.set(l3, LocalDate.now().minusDays(30));
             field.set(l4, LocalDate.now().minusDays(8));
-        } catch(Exception ignored){}
+        } catch (Exception ignored) {}
 
-        // إضافة الغرامات تلقائياً
-        if(l1.isOverdue()) fineService.addFine(u1, l1.getFineAmount());
-        if(l2.isOverdue()) fineService.addFine(u2, l2.getFineAmount());
-        if(l3.isOverdue()) fineService.addFine(u3, l3.getFineAmount());
-        if(l4.isOverdue()) fineService.addFine(u3, l4.getFineAmount());
+        if (l1.isOverdue()) fineService.addFine(u1, l1.getFineAmount());
+        if (l2.isOverdue()) fineService.addFine(u2, l2.getFineAmount());
+        if (l3.isOverdue()) fineService.addFine(u3, l3.getFineAmount());
+        if (l4.isOverdue()) fineService.addFine(u3, l4.getFineAmount());
 
-        // ======= Main Menu =======
-        while(true){
-            System.out.println("\n===== Library System =====");
-            System.out.println("1. Login as Admin");
-            System.out.println("2. Login as User");
-            System.out.println("3. Exit");
-            System.out.print("Your choice: ");
-            int choice = sc.nextInt(); sc.nextLine();
+        // ==================================== GUI MAIN MENU ====================================
+        JFrame frame = new JFrame("Library Management System");
+        frame.setSize(520, 620);
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setLocationRelativeTo(null);
 
-            if(choice==1){
-                System.out.print("Admin username: "); 
-                String name = sc.nextLine();
-                System.out.print("Password: "); 
-                String pass = sc.nextLine();
+        ImageIcon bg = new ImageIcon("C:\\Users\\JC\\eclipse-workspace\\final_try\\src\\test\\resources\\library.png");
+        JLabel background = new JLabel(bg);
+        background.setLayout(new GridBagLayout());
+        frame.setContentPane(background);
 
-                if(name.equals(admin.getUsername()) && admin.checkPassword(pass)){
-                    System.out.println("✅ Admin login successful!");
-                    adminMenu(sc, books, cds, users, loanService, notifier);
-                } else System.out.println("❌ Invalid username or password.");
-            }
-            else if(choice==2){
-                System.out.print("Enter your name: "); String name = sc.nextLine();
-                System.out.print("Enter your email: "); String email = sc.nextLine();
+        Font f = new Font("Arial", Font.BOLD, 20);
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(20, 0, 20, 0);
+        gbc.gridx = 0;
 
-                User loggedUser = null;
-                for(User u: users){
-                    if(u.getName().equalsIgnoreCase(name) && u.getEmail().equalsIgnoreCase(email)){
-                        loggedUser = u; break;
-                    }
-                }
+        JButton adminBtn = new JButton("Login as Admin");
+        adminBtn.setFont(f); adminBtn.setPreferredSize(new Dimension(250, 60));
+        gbc.gridy = 0; background.add(adminBtn, gbc);
 
-                if(loggedUser!=null){
-                    System.out.println("✅ Logged in as user: "+loggedUser.getName());
-                    userMenu(sc, loggedUser, books, cds, loanService);
-                } else System.out.println("❌ No user found with that info.");
-            }
-            else if(choice==3){ System.out.println("👋 Exiting system..."); break; }
-            else System.out.println("❗ Invalid option.");
-        }
+        JButton userBtn = new JButton("Login as User");
+        userBtn.setFont(f); userBtn.setPreferredSize(new Dimension(250, 60));
+        gbc.gridy = 1; background.add(userBtn, gbc);
 
-        sc.close();
+        JButton exitBtn = new JButton("Exit");
+        exitBtn.setFont(f); exitBtn.setPreferredSize(new Dimension(250, 60));
+        gbc.gridy = 2; background.add(exitBtn, gbc);
+
+        adminBtn.addActionListener(e -> adminLogin(frame, admin, sc, books, cds, users, loanService, notifier));
+        userBtn.addActionListener(e -> userLogin(frame, users, sc, books, cds, loanService));
+        exitBtn.addActionListener(e -> System.exit(0));
+
+        frame.setVisible(true);
     }
 
-    // ======= Admin Menu =======
-    private static void adminMenu(Scanner sc, List<Book> books, List<CD> cds, List<User> users, LoanService loanService, MediaEmailNotifier notifier){
-        while(true){
-            System.out.println("\n===== Admin Menu =====");
-            System.out.println("1. View Media");
-            System.out.println("2. Add Media");
-            System.out.println("3. Delete Media");
-            System.out.println("4. Search Media");
-            System.out.println("5. View users and fines");
-            System.out.println("6. Register a new user");
-            System.out.println("7. View number of borrowed Media");
-            System.out.println("8. Send reminders");
-            System.out.println("9. Unregister a user");
-            System.out.println("10. Logout");
+    private static void adminLogin(JFrame frame, Admin admin, Scanner sc, List<Book> books, List<CD> cds,
+                                   List<User> users, LoanService loanService, MediaEmailNotifier notifier) {
+        JPanel p = new JPanel(new GridLayout(3,2,10,15));
+        p.add(new JLabel("Username:")); JTextField u = new JTextField();
+        p.add(u); p.add(new JLabel("Password:")); JPasswordField pf = new JPasswordField();
+        p.add(pf);
 
-            System.out.print("Your choice: "); int c = sc.nextInt(); sc.nextLine();
-
-            switch(c){
-                case 1 -> { // View Media
-                    System.out.println("View: 1-Books 2-CDs");
-                    int type = sc.nextInt(); sc.nextLine();
-                    if(type == 1){
-                        books.forEach(b -> System.out.println(b + (b.isBorrowed() ? " (Borrowed)" : " (Available)")));
-                    } else if(type == 2){
-                        cds.forEach(cd -> System.out.println(cd + (cd.isBorrowed() ? " (Borrowed)" : " (Available)")));
-                    } else System.out.println("❗ Invalid option.");
-                }
-
-                case 2 -> { // Add Media
-                    System.out.println("Add: 1-Book 2-CD");
-                    int type = sc.nextInt(); sc.nextLine();
-                    if(type == 1){
-                        System.out.print("Enter title: "); String title = sc.nextLine();
-                        System.out.print("Enter author: "); String author = sc.nextLine();
-                        System.out.print("Enter ISBN: "); String isbn = sc.nextLine();
-                        boolean exists = books.stream().anyMatch(b -> b.getIsbn().equals(isbn));
-                        if(exists) System.out.println("❌ ISBN already exists.");
-                        else { books.add(new Book(title, author, isbn)); System.out.println("✅ Book added!"); }
-                    } else if(type == 2){
-                        System.out.print("Enter title: "); String title = sc.nextLine();
-                        System.out.print("Enter artist: "); String artist = sc.nextLine();
-                        System.out.print("Enter CD ID: "); String cdId = sc.nextLine();
-                        boolean exists = cds.stream().anyMatch(cd -> cd.getId().equals(cdId));
-                        if(exists) System.out.println("❌ CD ID already exists.");
-                        else { cds.add(new CD(title, artist, cdId)); System.out.println("✅ CD added!"); }
-                    } else System.out.println("❗ Invalid option.");
-                }
-
-                case 3 -> { // Delete Media
-                    System.out.println("Delete: 1-Book 2-CD");
-                    int type = sc.nextInt(); sc.nextLine();
-                    if(type == 1){
-                        System.out.print("Enter ISBN to delete: "); String isbn = sc.nextLine();
-                        Book del = books.stream().filter(b -> b.getIsbn().equals(isbn)).findFirst().orElse(null);
-                        if(del != null){ books.remove(del); System.out.println("✅ Book deleted!"); }
-                        else System.out.println("❌ Book not found.");
-                    } else if(type == 2){
-                        System.out.print("Enter CD ID to delete: "); String cdId = sc.nextLine();
-                        CD del = cds.stream().filter(cd -> cd.getId().equals(cdId)).findFirst().orElse(null);
-                        if(del != null){ cds.remove(del); System.out.println("✅ CD deleted!"); }
-                        else System.out.println("❌ CD not found.");
-                    } else System.out.println("❗ Invalid option.");
-                }
-
-                case 4 -> { // Search
-                    System.out.println("Search: 1-Book 2-CD"); 
-                    int type = sc.nextInt(); sc.nextLine();
-
-                    if(type == 1){
-                        System.out.println("Search by: 1-Title 2-Author 3-ISBN"); 
-                        int s = sc.nextInt(); sc.nextLine();
-
-                        System.out.print("Enter query: "); 
-                        String query = sc.nextLine();
-
-                        SearchStrategy strategy = switch(s){ 
-                            case 1 -> new SearchByTitle(); 
-                            case 2 -> new SearchByAuthor(); 
-                            case 3 -> new SearchByISBN(); 
-                            default -> null; 
-                        };
-                        if(strategy != null){ 
-                            List<Book> res = strategy.search(books, query); 
-                            if(res.isEmpty()) System.out.println("❌ No books found."); 
-                            else res.forEach(System.out::println);
-                        } else System.out.println("❗ Invalid search option.");
-                    } else if(type == 2){
-                        System.out.print("Enter query: "); 
-                        String query = sc.nextLine();
-
-                        List<CD> cdResults = cds.stream()
-                                                .filter(cd -> cd.getTitle().toLowerCase().contains(query.toLowerCase()) ||
-                                                              cd.getArtist().toLowerCase().contains(query.toLowerCase()) ||
-                                                              cd.getId().toLowerCase().contains(query.toLowerCase()))
-                                                .toList();
-                        if(cdResults.isEmpty()) System.out.println("❌ No CDs found."); 
-                        else cdResults.forEach(System.out::println);
-                    } else System.out.println("❗ Invalid option.");
-                }
-
-
-                case 5 -> users.forEach(u -> System.out.println(u.getName()+" | "+u.getEmail()+" | Fine: $"+u.getFineBalance()));
-
-                case 6 -> { // Register User
-                    System.out.print("Enter new user name: "); String uname = sc.nextLine();
-                    System.out.print("Enter email: "); String uemail = sc.nextLine();
-                    users.add(new User(uname,uemail)); 
-                    System.out.println("✅ User registered!"); 
-                }
-
-                case 7 -> { // Borrowed count for all media
-                    long countBooks = books.stream().filter(Book::isBorrowed).count();
-                    long countCDs = cds.stream().filter(CD::isBorrowed).count();
-                    long total = countBooks + countCDs;
-                    System.out.println("📚 Total borrowed media: " + total + " (Books: " + countBooks + " | CDs: " + countCDs + ")");
-                }
-
-                case 8 -> { // Send reminders
-                    System.out.println("📩 Sending overdue reminders...");
-                    for(User u: users){
-                        boolean hasOverdue = loanService.getUserLoans(u)
-                                                        .stream()
-                                                        .anyMatch(Loan::isOverdue);
-                        if(hasOverdue){
-                            notifier.update(null, u); 
-                        }
-                    }
-                }
-
-                case 9 -> { // Unregister user
-                    System.out.print("Enter email of user to unregister: "); 
-                    String email = sc.nextLine();
-                    User target = users.stream().filter(u -> u.getEmail().equalsIgnoreCase(email)).findFirst().orElse(null);
-                    if(target == null) System.out.println("❌ No user found with that email.");
-                    else if(target.getFineBalance() > 0) System.out.println("❌ Cannot unregister user with unpaid fines.");
-                    else if(target.getLoans().stream().anyMatch(l -> !l.isReturned())) System.out.println("❌ Cannot unregister user with active loans.");
-                    else { users.remove(target); System.out.println("✅ User unregistered successfully: " + target.getName()); }
-                }
-
-                case 10 -> { System.out.println("🔙 Logout"); return; }
-
-                default -> System.out.println("❗ Invalid option.");
+        int r = JOptionPane.showConfirmDialog(frame, p, "Admin Login", JOptionPane.OK_CANCEL_OPTION);
+        if (r == JOptionPane.OK_OPTION) {
+            if (u.getText().equals(admin.getUsername()) && admin.checkPassword(new String(pf.getPassword()))) {
+                JOptionPane.showMessageDialog(frame, "Welcome Admin!");
+                adminMenu(sc, books, cds, users, loanService, notifier);
+            } else {
+                JOptionPane.showMessageDialog(frame, "Invalid credentials!", "Error", JOptionPane.ERROR_MESSAGE);
             }
         }
     }
 
-    // ======= User Menu =======
-    private static void userMenu(Scanner sc, User user, List<Book> books, List<CD> cds, LoanService loanService){
-        while(true){
-            System.out.println("\n===== User Menu =====");
-            System.out.println("1. Show all books");
-            System.out.println("2. Show all CDs");
-            System.out.println("3. Search book");
-            System.out.println("4. Borrow a Media");
-            System.out.println("5. Return a Media");
-            System.out.println("6. View & pay fine");
-            System.out.println("7. Logout");
+    private static void userLogin(JFrame frame, List<User> users, Scanner sc, List<Book> books, List<CD> cds, LoanService loanService) {
+        JPanel p = new JPanel(new GridLayout(3,2,10,15));
+        p.add(new JLabel("Name:")); JTextField n = new JTextField();
+        p.add(n); p.add(new JLabel("Email:")); JTextField e = new JTextField();
+        p.add(e);
 
-            System.out.print("Choice: "); int c=sc.nextInt(); sc.nextLine();
-
-            switch(c){
-                case 1->books.forEach(b->System.out.println(b+(b.isBorrowed()?" (Borrowed)":" (Available)")));
-                case 2->cds.forEach(cd -> System.out.println(cd + (cd.isBorrowed() ? " (Borrowed)" : " (Available)")));
-                case 3 -> { 
-                    System.out.println("Search: 1-Book 2-CD"); 
-                    int type = sc.nextInt(); sc.nextLine();
-
-                    if(type == 1){
-                        System.out.println("Search by: 1-Title 2-Author 3-ISBN"); 
-                        int s = sc.nextInt(); sc.nextLine();
-
-                        System.out.print("Enter query: "); 
-                        String query = sc.nextLine();
-
-                        SearchStrategy strategy = switch(s){ 
-                            case 1 -> new SearchByTitle(); 
-                            case 2 -> new SearchByAuthor(); 
-                            case 3 -> new SearchByISBN(); 
-                            default -> null; 
-                        };
-                        if(strategy != null){ 
-                            List<Book> res = strategy.search(books, query); 
-                            if(res.isEmpty()) System.out.println("❌ No books found."); 
-                            else res.forEach(System.out::println);
-                        } else System.out.println("❗ Invalid search option.");
-                    } else if(type == 2){
-                        System.out.print("Enter query: "); 
-                        String query = sc.nextLine();
-
-                        List<CD> cdResults = cds.stream()
-                                                .filter(cd -> cd.getTitle().toLowerCase().contains(query.toLowerCase()) ||
-                                                              cd.getArtist().toLowerCase().contains(query.toLowerCase()) ||
-                                                              cd.getId().toLowerCase().contains(query.toLowerCase()))
-                                                .toList();
-                        if(cdResults.isEmpty()) System.out.println("❌ No CDs found."); 
-                        else cdResults.forEach(System.out::println);
-                    } else System.out.println("❗ Invalid option.");
-                }
-
-                case 4 -> { 
-                    List<Loan> userLoans = loanService.getUserLoans(user);
-
-                 
-                    boolean hasOverdueOrActive = userLoans.stream()
-                                                          .anyMatch(l -> l.isOverdue() || !l.isReturned());
-                    if(hasOverdueOrActive){
-                        System.out.println("❌ You have overdue or active items. Please return them or pay fines first.");
-                        break;
-                    }
-
-                    System.out.println("Borrow: 1-Book 2-CD"); 
-                    int type = sc.nextInt(); sc.nextLine();
-
-                    if(type == 1){
-                        System.out.print("Enter book title: "); 
-                        String title = sc.nextLine();
-
-                        Book bookFound = books.stream()
-                                              .filter(b -> b.getTitle().equalsIgnoreCase(title) && !b.isBorrowed())
-                                              .findFirst().orElse(null);
-                        if(bookFound != null){
-                            loanService.createLoan(bookFound, user);
-                            System.out.println("✅ Borrowed Book! Due: " + bookFound.getDueDate());
-                        } else System.out.println("❌ Book not available.");
-                    } else if(type == 2){
-                        System.out.print("Enter CD title: "); 
-                        String title = sc.nextLine();
-
-                        CD cdFound = cds.stream()
-                                        .filter(cd -> cd.getTitle().equalsIgnoreCase(title) && !cd.isBorrowed())
-                                        .findFirst().orElse(null);
-                        if(cdFound != null){
-                            loanService.createLoan(cdFound, user);
-                            System.out.println("✅ Borrowed CD! Due: " + cdFound.getDueDate());
-                        } else System.out.println("❌ CD not available.");
-                    } else System.out.println("❗ Invalid option.");
-                }
-
-                case 5 -> { 
-                    System.out.println("Return: 1-Book 2-CD"); 
-                    int type = sc.nextInt(); sc.nextLine();
-
-                    if(type == 1){
-                        System.out.print("Enter book title to return: "); 
-                        String title = sc.nextLine();
-
-                        Loan loanToReturn = loanService.getUserLoans(user).stream()
-                                                  .filter(l -> l.getMedia() instanceof Book && l.getMedia().getTitle().equalsIgnoreCase(title) && !l.isReturned())
-                                                  .findFirst().orElse(null);
-
-                        if(loanToReturn != null){
-                            loanService.returnLoan(loanToReturn);
-                            System.out.println("✅ Book returned successfully!");
-                        } else System.out.println("❌ No such borrowed book found.");
-                    } else if(type == 2){
-                        System.out.print("Enter CD title to return: "); 
-                        String title = sc.nextLine();
-
-                        Loan loanToReturn = loanService.getUserLoans(user).stream()
-                                                  .filter(l -> l.getMedia() instanceof CD && l.getMedia().getTitle().equalsIgnoreCase(title) && !l.isReturned())
-                                                  .findFirst().orElse(null);
-
-                        if(loanToReturn != null){
-                            loanService.returnLoan(loanToReturn);
-                            System.out.println("✅ CD returned successfully!");
-                        } else System.out.println("❌ No such borrowed CD found.");
-                    } else System.out.println("❗ Invalid option.");
-                }
-
-                case 6->{ 
-                    System.out.println("Your fine: $"+user.getFineBalance());
-                    if(user.getFineBalance()>0){ 
-                        System.out.print("Pay now? (y/n): "); String ans=sc.nextLine();
-                        if(ans.equalsIgnoreCase("y")){ 
-                            System.out.print("Amount: "); double amt=sc.nextDouble(); sc.nextLine(); 
-                            user.payFine(amt); 
-                            System.out.println("💰 Remaining: $"+user.getFineBalance()); 
-                        } 
-                    }
-                }
-                case 7-> { System.out.println("🔙 Logout"); return; }
-                default->System.out.println("❗ Invalid option.");
+        int r = JOptionPane.showConfirmDialog(frame, p, "User Login", JOptionPane.OK_CANCEL_OPTION);
+        if (r == JOptionPane.OK_OPTION) {
+            User user = users.stream()
+                    .filter(u -> u.getName().equalsIgnoreCase(n.getText().trim()) && u.getEmail().equalsIgnoreCase(e.getText().trim()))
+                    .findFirst().orElse(null);
+            if (user != null) {
+                JOptionPane.showMessageDialog(frame, "Welcome, " + user.getName() + "!");
+                userMenu(sc, user, books, cds, loanService);
+            } else {
+                JOptionPane.showMessageDialog(frame, "User not found!", "Error", JOptionPane.ERROR_MESSAGE);
             }
         }
+    }
+
+    // ================================== ADMIN MENU ==================================
+    private static void adminMenu(Scanner sc, List<Book> books, List<CD> cds,
+                                  List<User> users, LoanService loanService,
+                                  MediaEmailNotifier notifier) {
+        while (true) {
+            ConsoleArt.clear();
+            ConsoleArt.title("Admin Dashboard");
+
+            String menu = """
+                1 │ View All Media (Books & CDs)
+                2 │ Add New Media
+                3 │ Delete Media
+                4 │ Search Media
+                5 │ View Users & Fines
+                6 │ Register New User
+                7 │ Show Borrowed Media Count
+                8 │ Send Overdue Reminders
+                9 │ Unregister User
+                0 │ Logout
+                """;
+
+            ConsoleArt.box(menu);
+
+            System.out.print(ConsoleArt.CYAN + ConsoleArt.BOLD + "Enter choice: " + ConsoleArt.RESET);
+            String in = sc.nextLine().trim();
+
+            if (in.equals("0")) { ConsoleArt.success("Logged out!"); ConsoleArt.waitEnter(); return; }
+
+            int c;
+            try { c = Integer.parseInt(in); } catch (Exception ex) { ConsoleArt.error("Invalid input!"); ConsoleArt.waitEnter(); continue; }
+
+            switch (c) {
+                case 1 -> viewAllMedia(books, cds);
+                case 2 -> addMedia(sc, books, cds);
+                case 3 -> deleteMedia(sc, books, cds);
+                case 4 -> searchMedia(sc, books, cds);
+                case 5 -> viewUsersAndFines(users);
+                case 6 -> registerNewUser(sc, users);
+                case 7 -> showBorrowedCount(books, cds);
+                case 8 -> sendReminders(users, loanService, notifier);
+                case 9 -> unregisterUser(sc, users, loanService);
+                default -> { ConsoleArt.error("Invalid option!"); ConsoleArt.waitEnter(); }
+            }
+        }
+    }
+
+    // ================================== USER MENU ==================================
+    private static void userMenu(Scanner sc, User user, List<Book> books,
+                                 List<CD> cds, LoanService loanService) {
+        while (true) {
+            ConsoleArt.clear();
+            ConsoleArt.title("Welcome, " + user.getName() + "!");
+
+            String fine = user.getFineBalance() > 0
+                    ? ConsoleArt.RED + "Outstanding Fine: $" + String.format("%.2f", user.getFineBalance()) + ConsoleArt.RESET
+                    : ConsoleArt.GREEN + "No outstanding fines" + ConsoleArt.RESET;
+
+            String menu = """
+                %s
+
+                1 │ View All Books
+                2 │ View All CDs
+                3 │ Search Media
+                4 │ Borrow Media
+                5 │ Return Media
+                6 │ View & Pay Fine
+                7 │ Logout
+                """.formatted(fine);
+
+            ConsoleArt.box(menu);
+
+            System.out.print(ConsoleArt.CYAN + "Choose: " + ConsoleArt.RESET);
+            int c = 0;
+            try { c = sc.nextInt(); sc.nextLine(); }
+            catch (Exception e) { sc.nextLine(); ConsoleArt.error("Enter a number!"); ConsoleArt.waitEnter(); continue; }
+
+            switch (c) {
+                case 1 -> showAll(books, "BOOKS");
+                case 2 -> showAll(cds, "CDS");
+                case 3 -> searchMediaUser(sc, books, cds);
+                case 4 -> borrowMedia(sc, user, books, cds, loanService);
+                case 5 -> returnMedia(sc, user, loanService);
+                case 6 -> payFine(sc, user);
+                case 7 -> { ConsoleArt.success("Goodbye, " + user.getName() + "!"); ConsoleArt.waitEnter(); return; }
+                default -> { ConsoleArt.error("Invalid choice!"); ConsoleArt.waitEnter(); }
+            }
+        }
+    }
+
+    // ================================== HELPER METHODS ==================================
+    private static void showAll(List<?> list, String type) {
+        ConsoleArt.clear();
+        ConsoleArt.title(type.isEmpty() ? "Media List" : "All " + type);
+        list.forEach(item -> {
+            String status = (item instanceof Media m && m.isBorrowed())
+                    ? ConsoleArt.RED + "(Borrowed)" + ConsoleArt.RESET
+                    : ConsoleArt.GREEN + "(Available)" + ConsoleArt.RESET;
+            System.out.println(" • " + item + "  " + status);
+        });
+        ConsoleArt.waitEnter();
+    }
+
+    private static void viewAllMedia(List<Book> books, List<CD> cds) {
+        ConsoleArt.clear();
+        ConsoleArt.title("All Library Media");
+        System.out.println(ConsoleArt.YELLOW + ConsoleArt.BOLD + "BOOKS" + ConsoleArt.RESET);
+        showAll(books, "");
+        System.out.println("\n" + ConsoleArt.YELLOW + ConsoleArt.BOLD + "CDS" + ConsoleArt.RESET);
+        showAll(cds, "");
+        ConsoleArt.waitEnter();
+    }
+
+    private static void addMedia(Scanner sc, List<Book> books, List<CD> cds) {
+        ConsoleArt.clear();
+        ConsoleArt.title("Add New Media");
+        System.out.print("1-Book  2-CD → ");
+        int t = sc.nextInt(); sc.nextLine();
+
+        if (t == 1) {
+            System.out.print("Title: "); String title = sc.nextLine();
+            System.out.print("Author: "); String author = sc.nextLine();
+            System.out.print("ISBN: "); String isbn = sc.nextLine();
+            if (books.stream().anyMatch(b -> b.getIsbn().equals(isbn))) {
+                ConsoleArt.error("ISBN already exists!");
+            } else {
+                books.add(new Book(title, author, isbn));
+                ConsoleArt.success("Book added!");
+            }
+        } else if (t == 2) {
+            System.out.print("Title: "); String title = sc.nextLine();
+            System.out.print("Artist: "); String artist = sc.nextLine();
+            System.out.print("CD ID: "); String id = sc.nextLine();
+            if (cds.stream().anyMatch(c -> c.getId().equals(id))) {
+                ConsoleArt.error("CD ID already exists!");
+            } else {
+                cds.add(new CD(title, artist, id));
+                ConsoleArt.success("CD added!");
+            }
+        } else ConsoleArt.error("Wrong type!");
+        ConsoleArt.waitEnter();
+    }
+
+    private static void deleteMedia(Scanner sc, List<Book> books, List<CD> cds) {
+        ConsoleArt.clear();
+        ConsoleArt.title("Delete Media");
+        System.out.print("1-Book  2-CD → ");
+        int t = sc.nextInt(); sc.nextLine();
+
+        if (t == 1) {
+            System.out.print("Enter ISBN: "); String isbn = sc.nextLine();
+            books.removeIf(b -> b.getIsbn().equals(isbn));
+            ConsoleArt.success("Book deleted (if existed)!");
+        } else if (t == 2) {
+            System.out.print("Enter CD ID: "); String id = sc.nextLine();
+            cds.removeIf(c -> c.getId().equals(id));
+            ConsoleArt.success("CD deleted (if existed)!");
+        }
+        ConsoleArt.waitEnter();
+    }
+
+    private static void searchMedia(Scanner sc, List<Book> books, List<CD> cds) {
+        ConsoleArt.clear();
+        ConsoleArt.title("Search Media");
+        System.out.print("1-Book  2-CD → ");
+        int t = sc.nextInt(); sc.nextLine();
+
+        if (t == 1) {
+            System.out.println("Search by: 1-Title  2-Author  3-ISBN");
+            int s = sc.nextInt(); sc.nextLine();
+            System.out.print("Query: "); String q = sc.nextLine();
+            SearchStrategy strategy = switch (s) {
+                case 1 -> new SearchByTitle();
+                case 2 -> new SearchByAuthor();
+                case 3 -> new SearchByISBN();
+                default -> null;
+            };
+            if (strategy != null) {
+                List<Book> res = strategy.search(books, q);
+                showAll(res, "Search Results - Books");
+            } else ConsoleArt.error("Invalid search type!");
+        } else if (t == 2) {
+            System.out.print("Enter query: "); String q = sc.nextLine();
+            List<CD> res = cds.stream()
+                    .filter(cd -> cd.getTitle().toLowerCase().contains(q.toLowerCase()) ||
+                                  cd.getArtist().toLowerCase().contains(q.toLowerCase()) ||
+                                  cd.getId().toLowerCase().contains(q.toLowerCase()))
+                    .toList();
+            showAll(res, "Search Results - CDs");
+        }
+        ConsoleArt.waitEnter();
+    }
+
+    private static void viewUsersAndFines(List<User> users) {
+        ConsoleArt.clear();
+        ConsoleArt.title("Users & Fines");
+        users.forEach(u -> System.out.println(" • " + u.getName() + " | " + u.getEmail() +
+                " | Fine: " + ConsoleArt.RED + "$" + u.getFineBalance() + ConsoleArt.RESET));
+        ConsoleArt.waitEnter();
+    }
+
+    private static void registerNewUser(Scanner sc, List<User> users) {
+        ConsoleArt.clear();
+        ConsoleArt.title("Register New User");
+        System.out.print("Name: "); String name = sc.nextLine();
+        System.out.print("Email: "); String email = sc.nextLine();
+        users.add(new User(name, email));
+        ConsoleArt.success("User registered successfully!");
+        ConsoleArt.waitEnter();
+    }
+
+    private static void showBorrowedCount(List<Book> books, List<CD> cds) {
+        long b = books.stream().filter(Book::isBorrowed).count();
+        long c = cds.stream().filter(CD::isBorrowed).count();
+        ConsoleArt.clear();
+        ConsoleArt.title("Borrowed Media");
+        System.out.println("Total borrowed items: " + (b + c));
+        System.out.println("   Books: " + b);
+        System.out.println("   CDs: " + c);
+        ConsoleArt.waitEnter();
+    }
+
+    private static void sendReminders(List<User> users, LoanService loanService, MediaEmailNotifier notifier) {
+        ConsoleArt.clear();
+        ConsoleArt.title("Sending Overdue Reminders");
+        int sent = 0;
+        for (User u : users) {
+            if (loanService.getUserLoans(u).stream().anyMatch(Loan::isOverdue)) {
+                notifier.update(null, u);
+                sent++;
+            }
+        }
+        ConsoleArt.success(sent + " reminder email(s) sent!");
+        ConsoleArt.waitEnter();
+    }
+
+    private static void unregisterUser(Scanner sc, List<User> users, LoanService loanService) {
+        ConsoleArt.clear();
+        ConsoleArt.title("Unregister User");
+        System.out.print("Enter user email: "); String email = sc.nextLine();
+        User target = users.stream().filter(u -> u.getEmail().equalsIgnoreCase(email)).findFirst().orElse(null);
+
+        if (target == null) ConsoleArt.error("User not found!");
+        else if (target.getFineBalance() > 0) ConsoleArt.error("Cannot delete user with unpaid fines!");
+        else if (target.getLoans().stream().anyMatch(l -> !l.isReturned())) ConsoleArt.error("User has active loans!");
+        else {
+            users.remove(target);
+            ConsoleArt.success("User " + target.getName() + " removed!");
+        }
+        ConsoleArt.waitEnter();
+    }
+
+    // User actions
+    private static void searchMediaUser(Scanner sc, List<Book> books, List<CD> cds) {
+        // نفس الكود بتاع البحث اللي فوق بس بدون عنوان مختلف
+        searchMedia(sc, books, cds);
+    }
+
+    private static void borrowMedia(Scanner sc, User user, List<Book> books, List<CD> cds, LoanService loanService) {
+        ConsoleArt.clear();
+        ConsoleArt.title("Borrow Media");
+
+        if (loanService.getUserLoans(user).stream().anyMatch(l -> l.isOverdue() || !l.isReturned())) {
+            ConsoleArt.error("You have overdue or active items!");
+            ConsoleArt.waitEnter();
+            return;
+        }
+
+        System.out.print("1-Book  2-CD → ");
+        int t = sc.nextInt(); sc.nextLine();
+
+        if (t == 1) {
+            System.out.print("Book title: "); String title = sc.nextLine();
+            Book b = books.stream().filter(book -> book.getTitle().equalsIgnoreCase(title) && !book.isBorrowed()).findFirst().orElse(null);
+            if (b != null) { loanService.createLoan(b, user); ConsoleArt.success("Book borrowed!"); }
+            else ConsoleArt.error("Book not available!");
+        } else if (t == 2) {
+            System.out.print("CD title: "); String title = sc.nextLine();
+            CD c = cds.stream().filter(cd -> cd.getTitle().equalsIgnoreCase(title) && !cd.isBorrowed()).findFirst().orElse(null);
+            if (c != null) { loanService.createLoan(c, user); ConsoleArt.success("CD borrowed!"); }
+            else ConsoleArt.error("CD not available!");
+        }
+        ConsoleArt.waitEnter();
+    }
+
+    private static void returnMedia(Scanner sc, User user, LoanService loanService) {
+        ConsoleArt.clear();
+        ConsoleArt.title("Return Media");
+        System.out.print("1-Book  2-CD → ");
+        int t = sc.nextInt(); sc.nextLine();
+
+        if (t == 1) {
+            System.out.print("Book title: "); String title = sc.nextLine();
+            Loan loan = loanService.getUserLoans(user).stream()
+                    .filter(l -> l.getMedia() instanceof Book && l.getMedia().getTitle().equalsIgnoreCase(title) && !l.isReturned())
+                    .findFirst().orElse(null);
+            if (loan != null) { loanService.returnLoan(loan); ConsoleArt.success("Book returned!"); }
+            else ConsoleArt.error("No such book borrowed!");
+        } else if (t == 2) {
+            System.out.print("CD title: "); String title = sc.nextLine();
+            Loan loan = loanService.getUserLoans(user).stream()
+                    .filter(l -> l.getMedia() instanceof CD && l.getMedia().getTitle().equalsIgnoreCase(title) && !l.isReturned())
+                    .findFirst().orElse(null);
+            if (loan != null) { loanService.returnLoan(loan); ConsoleArt.success("CD returned!"); }
+            else ConsoleArt.error("No such CD borrowed!");
+        }
+        ConsoleArt.waitEnter();
+    }
+
+    private static void payFine(Scanner sc, User user) {
+        ConsoleArt.clear();
+        ConsoleArt.title("Fine Payment");
+        System.out.println("Current fine: " + ConsoleArt.RED + "$" + user.getFineBalance() + ConsoleArt.RESET);
+        if (user.getFineBalance() <= 0) {
+            ConsoleArt.info("No fine to pay.");
+        } else {
+            System.out.print("Amount to pay: $");
+            double amt = sc.nextDouble(); sc.nextLine();
+            if (amt > 0 && amt <= user.getFineBalance()) {
+                user.payFine(amt);
+                ConsoleArt.success("Payment successful! Remaining: $" + user.getFineBalance());
+            } else ConsoleArt.error("Invalid amount!");
+        }
+        ConsoleArt.waitEnter();
     }
 }
