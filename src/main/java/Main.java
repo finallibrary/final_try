@@ -10,7 +10,7 @@ import service.*;
 import model.ConsoleArt;
 
 public class Main {
-   /*private static final int BORROW_DAYS = 28;
+     private static final int BORROW_DAYS = 28;
     private static FineService fineService = new FineService();
     public static void main(String[] args) {
         Scanner sc = new Scanner(System.in);
@@ -687,6 +687,6 @@ private static void returnMedia(Scanner sc, User user, LoanService loanService) 
         ConsoleArt.waitEnter();
     }
 
-*/
+
     
 }
