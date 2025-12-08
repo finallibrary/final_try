@@ -33,4 +33,5 @@ jobs:
       - name: Build and analyze
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: mvn -B jacoco:prepare-agent verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar jacoco:report -Dsonar.projectKey=finallibrary_final_try
+        run: mvn clean verify jacoco:report sonar:sonar -Dsonar.projectKey=finallibrary_final_try -Dsonar.login=${{ secrets.SONAR_TOKEN }}
+
