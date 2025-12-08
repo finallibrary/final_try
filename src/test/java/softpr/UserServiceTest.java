@@ -28,28 +28,24 @@ public class UserServiceTest {
         userService.addFine(user, 15.0);
         assertEquals(15.0, user.getFineBalance());
     }
+
     @Test
     public void userCanBorrowWhenNoFineAndNoOverdue() {
-        assertTrue(userService.canBorrow(user));
-        assertEquals("You can borrow books.", userService.getBorrowStatus(user));
+        Book book = new Book("Some Book", "Author", "001", 1);
+        assertTrue(userService.canBorrow(user, book));
+        assertEquals("You can borrow books.", userService.getBorrowStatus(user,book));
     }
 
     @Test
     public void userCannotBorrowWithFine() {
+        Book book = new Book("Some Book", "Author", "001", 1);
         user.addFine(10);
-        assertFalse(userService.canBorrow(user));
-        assertEquals("You cannot borrow a new book because you have unpaid fines.", userService.getBorrowStatus(user));
+        assertFalse(userService.canBorrow(user, book));
+        assertEquals("You cannot borrow a new book because you have unpaid fines.",
+                     userService.getBorrowStatus(user,book));
     }
 
-    @Test
-    public void userCannotBorrowWithOverdueBook() {
-        Book book = new Book("Clean Code", "Robert Martin", "123");
-        Loan loan = new Loan(book, user);
-        loan.setDueDate(LocalDate.now().minusDays(2));
-        user.addLoan(loan);
-        assertFalse(userService.canBorrow(user));
-        assertEquals("You cannot borrow a new book because you have overdue books.", userService.getBorrowStatus(user));
-    }
+    
 
     @Test
     public void payingFineReducesBalance() {

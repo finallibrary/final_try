@@ -71,12 +71,13 @@ public class AdminServiceUnitTest {
 
     @Test
     public void cannotUnregisterUserWithActiveLoan() {
-        Book book = new Book("Clean Code", "Robert Martin", "123");
+        Book book = new Book("Clean Code", "Robert Martin", "123", 1);
         Loan loan = loanService.createLoan(book, user);
         assertTrue(AdminService.getAllUsers().contains(user));
         adminService.unregisterUser(user);
         assertTrue(AdminService.getAllUsers().contains(user));
     }
+
 
     @Test
     public void cannotUnregisterUserWithUnpaidFine() {

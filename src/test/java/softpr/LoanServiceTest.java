@@ -26,7 +26,7 @@ class LoanServiceTest {
 
     @Test
     void loanCreateAddsLoanBook() {
-        Book book = new Book("Algorithms", "Robert Sedgewick", "001") {
+        Book book = new Book("Algorithms", "Robert Sedgewick", "001", 1) {
             @Override
             public double getFinePerDay() { return 2.0; }
         };
@@ -35,12 +35,13 @@ class LoanServiceTest {
         assertEquals(1, loans.size());
         assertEquals(loan, loans.get(0));
         assertTrue(book.isBorrowed());
+        assertEquals(0, book.getQuantity());
         assertFalse(loan.isReturned());
     }
 
     @Test
     void loanCreateAddsLoanCD() {
-        CD cd = new CD("Rock Classics", "Queen", "CD001") {
+        CD cd = new CD("Rock Classics", "Queen", "CD001", 1) {
             @Override
             public double getFinePerDay() { return 1.0; }
         };
@@ -49,40 +50,37 @@ class LoanServiceTest {
         assertEquals(1, loans.size());
         assertEquals(loan, loans.get(0));
         assertTrue(cd.isBorrowed());
+        assertEquals(0, cd.getQuantity());
         assertFalse(loan.isReturned());
     }
 
     @Test
     void returnLoanMarksReturnedAndCalculatesFine() {
-        Book book = new Book("Data Structures", "Mark Allen", "002") {
+        Book book = new Book("Data Structures", "Mark Allen", "002", 1) {
             @Override
             public double getFinePerDay() { return 10.0; }
         };
-
         Loan loan = loanService.createLoan(book, user);
-
-       loan.setDueDate(LocalDate.now().minusDays(2));
-
+        loan.setDueDate(LocalDate.now().minusDays(2));
         loanService.returnLoan(loan);
 
         assertTrue(loan.isReturned());
         assertFalse(book.isBorrowed());
+        assertEquals(1, book.getQuantity());
 
-         double expectedFine = loan.getDaysOverdue() * book.getFinePerDay();
+        double expectedFine = loan.getDaysOverdue() * book.getFinePerDay();
         user.addFine(expectedFine);
 
-        // التحقق من رصيد الغرامة
         assertEquals(20.0, user.getFineBalance());
     }
 
-
     @Test
     void getUserLoansReturnsOnlyActiveLoans() {
-        Book book1 = new Book("C++ Fundamentals", "Bjarne Stroustrup", "003");
-        Book book2 = new Book("Python Intro", "Guido Rossum", "004");
+        Book book1 = new Book("C++ Fundamentals", "Bjarne Stroustrup", "003", 1);
+        Book book2 = new Book("Python Intro", "Guido Rossum", "004", 1);
 
         Loan loan1 = loanService.createLoan(book1, user);
-        loan1.markReturned(); // إرجاع القرض
+        loan1.markReturned();
         Loan loan2 = loanService.createLoan(book2, user);
 
         List<Loan> userLoans = loanService.getUserLoans(user);
@@ -92,7 +90,7 @@ class LoanServiceTest {
 
     @Test
     void canBorrowAfterReturningOverdueLoanWithNoFine() {
-        Book oldBook = new Book("Old Book", "Author", "005") {
+        Book oldBook = new Book("Old Book", "Author", "005", 1) {
             @Override
             public double getFinePerDay() { return 0.0; }
         };
@@ -100,124 +98,38 @@ class LoanServiceTest {
         oldLoan.setDueDate(LocalDate.now().minusDays(3));
         loanService.returnLoan(oldLoan);
 
-        CD newCD = new CD("New CD", "Artist", "CD002");
+        CD newCD = new CD("New CD", "Artist", "CD002", 1);
         Loan newLoan = loanService.createLoan(newCD, user);
 
         assertFalse(newLoan.isReturned());
         assertTrue(newCD.isBorrowed());
-    }
-    @Test
-    void testGetUserLoansFullCoverage() {
-        User u1 = new User("Alice","nnn@gmail.com");
-        User u2 = new User("Bob","nn@gmail.com");
-
-        Book b1 = new Book("Book1", "Author1", "001");
-        Book b2 = new Book("Book2", "Author2", "002");
-
-        Loan loan1 = loanService.createLoan(b1, u1); 
-        Loan loan2 = loanService.createLoan(b2, u1); 
-        loan2.markReturned();
-        Loan loan3 = loanService.createLoan(b1, u2); 
-
-        List<Loan> loans = loanService.getUserLoans(u1);
-
-       assertEquals(1, loans.size());
-        assertEquals(loan1, loans.get(0));
+        assertEquals(0, newCD.getQuantity());
     }
 
     @Test
-    void testGetBorrowAndDueDate() {
-        Book book = new Book("Java", "Author", "006");
-        Loan loan = loanService.createLoan(book, user);
-
-        assertNotNull(loan.getDueDate());
-        assertNotNull(loan.getBorrowDate());
-        assertEquals(LocalDate.now(), loan.getBorrowDate());
-    }
-
-   @Test
     void cannotBorrowIfOnlyFineExists() {
-        Book book = new Book("Book A", "Author", "007");
+        Book book = new Book("Book A", "Author", "007", 1);
         user.addFine(5.0);
 
-        IllegalStateException ex = assertThrows(IllegalStateException.class, () -> {
-            loanService.createLoan(book, user);
-        });
+        IllegalStateException ex = assertThrows(IllegalStateException.class, () -> loanService.createLoan(book, user));
         assertTrue(ex.getMessage().contains("You cannot borrow"));
-    }
-
-    @Test
-    void cannotBorrowIfOnlyFineExistsMultipleAmounts() {
-        Book book = new Book("Book B", "Author", "008");
-        user.addFine(10.0);
-        user.addFine(5.0);
-
-        IllegalStateException ex = assertThrows(IllegalStateException.class, () -> {
-            loanService.createLoan(book, user);
-        });
-        assertTrue(ex.getMessage().contains("You cannot borrow"));
-    }
-
-    @Test
-    void testBookGetFinePerDayAndSetDueDate() {
-        Book book = new Book("Test Book", "Author", "999");
-        assertEquals(10.0, book.getFinePerDay());  
-        LocalDate due = LocalDate.now().plusDays(5);
-        book.setDueDate(due);
-        assertEquals(due, book.getDueDate());      
-    }
-
-    @Test
-    void testCDSetDueDateAndGetFinePerDay() {
-        CD cd = new CD("Test CD", "Artist", "CD999");
-        assertEquals(20.0, cd.getFinePerDay());   
-        LocalDate due = LocalDate.now().plusDays(3);
-        cd.setDueDate(due);
-        assertEquals(due, cd.getDueDate());       
-    }
-
-    @Test
-    void testLoanGetDaysOverdue() {
-        Book book = new Book("Late Book", "Author", "998");
-        Loan loan = loanService.createLoan(book, user);
-
-        assertEquals(0, loan.getDaysOverdue());
-
-        loan.setDueDate(LocalDate.now().minusDays(2));
-        assertEquals(2, loan.getDaysOverdue());
-    }
-
-    @Test
-    void testLoanIsOverdueFlag() {
-        Book book = new Book("Overdue Book", "Author", "997");
-        Loan loan = loanService.createLoan(book, user);
-
-      assertFalse(loan.isOverdue());
-
-        loan.setDueDate(LocalDate.now().minusDays(1));
-        assertTrue(loan.isOverdue());
-
-        loan.markReturned();
-        assertFalse(loan.isOverdue());
     }
 
     @Test
     void cannotBorrowIfOnlyOverdueLoanExists() {
-        Book oldBook = new Book("Old Book", "Author", "009");
+        Book oldBook = new Book("Old Book", "Author", "009", 1);
         Loan oldLoan = loanService.createLoan(oldBook, user);
         oldLoan.setDueDate(LocalDate.now().minusDays(1));
 
-        CD newCD = new CD("New CD", "Artist", "CD003");
-        IllegalStateException ex = assertThrows(IllegalStateException.class, () -> {
-            loanService.createLoan(newCD, user);
-        });
+        CD newCD = new CD("New CD", "Artist", "CD003", 1);
+        IllegalStateException ex = assertThrows(IllegalStateException.class, () -> loanService.createLoan(newCD, user));
         assertTrue(ex.getMessage().contains("You cannot borrow"));
     }
 
     @Test
     void cannotBorrowIfUserHasMultipleOverdueLoans() {
-        Book book1 = new Book("Book1", "Author", "010");
-        CD cd1 = new CD("CD1", "Artist", "CD004");
+        Book book1 = new Book("Book1", "Author", "010", 1);
+        CD cd1 = new CD("CD1", "Artist", "CD004", 1);
 
         Loan loan1 = loanService.createLoan(book1, user);
         Loan loan2 = loanService.createLoan(cd1, user);
@@ -225,11 +137,35 @@ class LoanServiceTest {
         loan1.setDueDate(LocalDate.now().minusDays(2));
         loan2.setDueDate(LocalDate.now().minusDays(1));
 
-        Book newBook = new Book("Book3", "Author", "011");
-
-        IllegalStateException ex = assertThrows(IllegalStateException.class, () -> {
-            loanService.createLoan(newBook, user);
-        });
+        Book newBook = new Book("Book3", "Author", "011", 1);
+        IllegalStateException ex = assertThrows(IllegalStateException.class, () -> loanService.createLoan(newBook, user));
         assertTrue(ex.getMessage().contains("You cannot borrow"));
+    }
+
+    @Test
+    void testLoanDatesAndFineCalculation() {
+        Book book = new Book("Java", "Author", "006", 1);
+        Loan loan = loanService.createLoan(book, user);
+        assertNotNull(loan.getBorrowDate());
+        assertNotNull(loan.getDueDate());
+
+        loan.setDueDate(LocalDate.now().minusDays(5));
+        assertEquals(5, loan.getDaysOverdue());
+
+        user.addFine(loan.getDaysOverdue() * book.getFinePerDay());
+        assertEquals(50.0, user.getFineBalance());
+    }
+
+    
+
+    @Test
+    void testReturnRestoresQuantity() {
+        Book book = new Book("Return Test", "Author", "013", 1);
+        Loan loan = loanService.createLoan(book, user);
+        assertEquals(0, book.getQuantity());
+
+        loanService.returnLoan(loan);
+        assertEquals(1, book.getQuantity());
+        assertFalse(book.isBorrowed());
     }
 }

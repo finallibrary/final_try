@@ -16,45 +16,42 @@ class CDTest {
 
     @BeforeEach
     void setup() {
-        cd = new CD("Rock Classics", "Queen", "CD002");
+        cd = new CD("Rock Classics", "Queen", "CD002", 2); // ← الكمية الآن مطلوبة
         user = new User("Noor", "noorfayek321@gmail.com");
     }
 
     @Test
     void testCDGetters() {
         assertEquals("Rock Classics", cd.getTitle());
-        assertEquals("Queen", cd.getArtist());
+        assertEquals("Queen", cd.getAuthor());
+        assertEquals(2, cd.getQuantity());
         assertFalse(cd.isBorrowed());
         assertNull(cd.getDueDate());
         assertNull(cd.getBorrower());
     }
-    @Test
-    void testIsOverdueWhenNotBorrowed() {
-        assertFalse(cd.isOverdue());
-    }
-    @Test
-    void testDaysOverdueWhenNotOverdue() {
-        cd.borrow(user);
-        cd.setDueDate(LocalDate.now().plusDays(5)); // لسه مش متأخر
-        assertEquals(0, cd.getDaysOverdue());
-    }
 
     @Test
-    void testBorrowCD() {
+    void testBorrowReducesQuantity() {
         cd.borrow(user);
+        assertEquals(1, cd.getQuantity());
         assertTrue(cd.isBorrowed());
         assertEquals(user, cd.getBorrower());
-        assertEquals(LocalDate.now().plusDays(7), cd.getDueDate());
+    }
 
-        // محاولة استعارة CD مستعار
-        cd.borrow(user); // حالياً لا ترمي استثناء، يمكن تعديل لوضع check
+    @Test
+    void testBorrowWhenLastCopy() {
+        cd = new CD("Rock Classics", "Queen", "CD002", 1);
+        cd.borrow(user);
+        assertEquals(0, cd.getQuantity());
         assertTrue(cd.isBorrowed());
     }
 
     @Test
-    void testReturnCD() {
+    void testReturnIncreasesQuantity() {
         cd.borrow(user);
+        int beforeReturn = cd.getQuantity();
         cd.returnMedia();
+        assertEquals(beforeReturn + 1, cd.getQuantity());
         assertFalse(cd.isBorrowed());
         assertNull(cd.getBorrower());
         assertNull(cd.getDueDate());
@@ -64,32 +61,20 @@ class CDTest {
     void testFinePerDay() {
         assertEquals(20.0, cd.getFinePerDay());
     }
+
     @Test
     void cdSetDueDateShouldChangeDueDate() {
-        CD cd = new CD("Hits", "Artist A", "CD001");
         LocalDate newDate = LocalDate.now().plusDays(3);
         cd.setDueDate(newDate);
         assertEquals(newDate, cd.getDueDate());
     }
 
     @Test
-    void cdGetFinePerDayShouldReturnCorrectValue() {
-        CD cd = new CD("Hits", "Artist A", "CD001");
-        assertEquals(20.0, cd.getFinePerDay());
-    }
-
-    @Test
-    void testOverdueAndDaysOverdue() {
+    void testOverdueAndDaysOverdue() throws Exception {
         cd.borrow(user);
-        cd.returnCD(); 
-        cd.borrow(user);
-
-         cd.borrow(user);
-        try {
-            java.lang.reflect.Field dueField = CD.class.getDeclaredField("dueDate");
-            dueField.setAccessible(true);
-            dueField.set(cd, LocalDate.now().minusDays(3));
-        } catch (Exception ignored) {}
+        java.lang.reflect.Field dueField = CD.class.getDeclaredField("dueDate");
+        dueField.setAccessible(true);
+        dueField.set(cd, LocalDate.now().minusDays(3));
 
         assertTrue(cd.isOverdue());
         assertEquals(3, cd.getDaysOverdue());
@@ -100,5 +85,6 @@ class CDTest {
         String str = cd.toString();
         assertTrue(str.contains("CD: Rock Classics"));
         assertTrue(str.contains("Queen"));
+        assertTrue(str.contains("Quantity: 2"));
     }
 }

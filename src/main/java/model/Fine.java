@@ -20,4 +20,5 @@ public class Fine {
             user.payFine(amount);
         }
     }
+    
 }

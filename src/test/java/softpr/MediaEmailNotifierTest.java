@@ -10,7 +10,6 @@ import service.EmailService;
 import service.MediaEmailNotifier;
 
 import java.time.LocalDate;
-import java.util.List;
 
 import static org.mockito.Mockito.*;
 
@@ -29,9 +28,10 @@ class MediaEmailNotifierTest {
 
     @Test
     void testSendOverdueEmailForBook() {
-        Book book = new Book("Algorithms", "Author", "001");
+        Book book = new Book("Algorithms", "Author", "001", 10);
         Loan overdueLoan = new Loan(book, user);
         overdueLoan.setDueDate(LocalDate.now().minusDays(2));
+        book.borrow(user);
 
         notifier.update(null, user);
 
@@ -41,9 +41,10 @@ class MediaEmailNotifierTest {
 
     @Test
     void testSendOverdueEmailForCD() {
-        CD cd = new CD("Rock Classics", "Queen", "CD001");
+        CD cd = new CD("Rock Classics", "Queen", "CD001", 10);
         Loan overdueLoan = new Loan(cd, user);
         overdueLoan.setDueDate(LocalDate.now().minusDays(3));
+        cd.borrow(user);
 
         notifier.update(null, user);
 
@@ -53,9 +54,10 @@ class MediaEmailNotifierTest {
 
     @Test
     void testSendOverdueEmailDoesNothingIfNoOverdue() {
-        Book book = new Book("Clean Code", "Robert", "002");
+        Book book = new Book("Clean Code", "Robert", "002", 10);
         Loan loan = new Loan(book, user);
         loan.setDueDate(LocalDate.now().plusDays(5));
+        book.borrow(user);
 
         notifier.update(null, user);
 
@@ -64,9 +66,10 @@ class MediaEmailNotifierTest {
 
     @Test
     void testSendOverdueEmailHandlesException() {
-        Book book = new Book("Data Structures", "Mark", "003");
+        Book book = new Book("Data Structures", "Mark", "003", 10);
         Loan overdueLoan = new Loan(book, user);
         overdueLoan.setDueDate(LocalDate.now().minusDays(1));
+        book.borrow(user);
 
         doThrow(new RuntimeException("SMTP Error"))
                 .when(mockEmailService)
@@ -80,13 +83,16 @@ class MediaEmailNotifierTest {
 
     @Test
     void testSendOverdueEmailMultipleLoans() {
-        Book book = new Book("Algorithms", "Author", "004");
-        CD cd = new CD("Jazz Hits", "Miles", "CD002");
+        Book book = new Book("Algorithms", "Author", "004", 10);
+        CD cd = new CD("Jazz Hits", "Miles", "CD002", 10);
 
         Loan loan1 = new Loan(book, user);
         loan1.setDueDate(LocalDate.now().minusDays(1));
+        book.borrow(user);
+
         Loan loan2 = new Loan(cd, user);
         loan2.setDueDate(LocalDate.now().minusDays(2));
+        cd.borrow(user);
 
         notifier.update(null, user);
 

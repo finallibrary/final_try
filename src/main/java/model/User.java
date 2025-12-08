@@ -22,6 +22,15 @@ public class User {
     public void addFine(double amount) {
         fineBalance += amount;
     }
+    public List<Loan> getOverdueLoans() {
+        List<Loan> list = new ArrayList<>();
+        for (Loan loan : loans) {
+            if (loan.isOverdue()) {
+                list.add(loan);
+            }
+        }
+        return list;
+    }
 
     public void payFine(double amount) {
         if (amount >= fineBalance) {
@@ -32,8 +41,11 @@ public class User {
     }
 
     public void addLoan(Loan loan) {
-        loans.add(loan);
+        if (!loans.contains(loan)) {
+            loans.add(loan);
+        }
     }
+
 
     public List<Loan> getLoans() {
         return loans;

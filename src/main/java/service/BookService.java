@@ -8,12 +8,13 @@ import java.util.Observable;
 public class BookService extends Observable {
 
     private final List<Book> books = new ArrayList<>();
-    private SearchStrategy searchStrategy;
+    private SearchStrategy<Book> searchStrategy;
 
-    public void addBook(String title, String author, String isbn) {
+
+    public void addBook(String title, String author, String isbn, int quantity) {
         boolean exists = books.stream().anyMatch(b -> b.getIsbn().equals(isbn));
-        if (exists) return;
-        books.add(new Book(title, author, isbn));
+        if (exists) return;  // لو الكتاب موجود، ما نضيفه
+        books.add(new Book(title, author, isbn, quantity)); // ← استخدم الكمية
     }
 
     public void addBook(Book book) {
@@ -38,19 +39,21 @@ public class BookService extends Observable {
 
     public boolean borrowBook(Book book, model.User user) {
         if (!user.canBorrow()) return false;
-        if (!book.isBorrowed()) {
-            book.borrow(user);
+        if (book.getQuantity() > 0) {          // ← تحقق من الكمية المتاحة
+            book.borrow(user);                  // يقلل الكمية داخليًا
             return true;
         }
-        return false;
+        return false;                           // لا يوجد نسخ متاحة للاستعارة
     }
 
     public void returnBook(Book book, model.User user) {
-        if (book.isBorrowed()) {
+        if (book.getQuantity() < 1 || book.getBorrower() == user) {  
+            // زيادة الكمية عند الإرجاع
             if (book.isOverdue()) user.addFine(5.0);
             book.returnBook();
         }
     }
+
 
     public void checkOverdueBooks() {
         for (Book book : books) {

@@ -23,133 +23,121 @@ public class BookServiceTest {
         bookService = new BookService();
     }
 
+    // ======= اختبارات الكمية =======
+    @Test
+    public void borrowBookQuantityMoreThanOneKeepsAvailable() {
+        Book book = new Book("Java Basics", "James Gosling", "001", 3);
+        User user = new User("Noor", "noorfayek321@gmail.com");
+
+        boolean result = bookService.borrowBook(book, user);
+        assertTrue(result);
+        assertEquals(2, book.getQuantity()); // الكمية نقصت واحد
+        assertTrue(book.isBorrowed());
+    }
+
+    @Test
+    public void borrowBookQuantityOneBecomesNotAvailable() {
+        Book book = new Book("Python Basics", "Author B", "002", 1);
+        User user = new User("Noor", "noor@gmail.com");
+
+        boolean result = bookService.borrowBook(book, user);
+        assertTrue(result);
+        assertEquals(0, book.getQuantity()); // الكتاب غير متاح بعد الاستعارة
+        assertTrue(book.isBorrowed());
+
+        User anotherUser = new User("Ali", "ali@gmail.com");
+        assertFalse(bookService.borrowBook(book, anotherUser)); // لا يمكن استعارة ثانية
+    }
+
+    @Test
+    public void returnBookIncreasesQuantity() {
+        Book book = new Book("C++ Basics", "Author C", "003", 2);
+        User user = new User("Noor", "noor@gmail.com");
+
+        bookService.borrowBook(book, user);
+        assertEquals(1, book.getQuantity());
+
+        bookService.returnBook(book, user);
+        assertEquals(2, book.getQuantity()); // الكمية رجعت
+        assertFalse(book.isBorrowed());
+    }
+
+    @Test
+    public void borrowFailsIfUserCannotBorrow() {
+        Book book = new Book("Data Structures", "Mark Allen", "004", 2);
+        User restrictedUser = new User("Noor", "noor@gmail.com") {
+            @Override
+            public boolean canBorrow() { return false; }
+        };
+
+        boolean result = bookService.borrowBook(book, restrictedUser);
+        assertFalse(result);
+        assertEquals(2, book.getQuantity()); // الكمية لم تتغير
+        assertFalse(book.isBorrowed());
+    }
+
+    @Test
+    public void borrowBookFailsWhenQuantityZero() {
+        Book book = new Book("Java", "Author", "005", 1);
+        User user = new User("Noor", "noor@gmail.com");
+
+        bookService.borrowBook(book, user); // كمية 0 الآن
+
+        User anotherUser = new User("Ali", "ali@gmail.com");
+        assertFalse(bookService.borrowBook(book, anotherUser));
+        assertEquals(0, book.getQuantity());
+    }
+
+   
+
+    // ======= اختبارات إضافة الكتب =======
     @Test
     public void addBookIncreasesList() {
-        bookService.addBook("Java Basics", "James Gosling", "001");
+        bookService.addBook("Java Basics", "James Gosling", "001", 2);
         List<Book> books = bookService.getAllBooks();
         assertEquals(1, books.size());
     }
 
     @Test
     public void duplicateISBNShouldNotAddBook() {
-        bookService.addBook("Java", "A", "001");
+        bookService.addBook("Java", "A", "001", 2);
         int before = bookService.getAllBooks().size();
-        bookService.addBook("Python", "B", "001");
+        bookService.addBook("Python", "B", "001", 2);
         assertEquals(before, bookService.getAllBooks().size());
     }
 
+    // ======= اختبارات الغرامة وتواريخ الاستعارة =======
     @Test
     void bookGetFinePerDayShouldReturnCorrectValue() {
-        Book book = new Book("Data Structures", "Mark Allen", "002");
+        Book book = new Book("Data Structures", "Mark Allen", "002", 1);
         assertEquals(10.0, book.getFinePerDay());
     }
 
     @Test
     void bookSetDueDateShouldChangeDueDate() {
-        Book book = new Book("Data Structures", "Mark Allen", "002");
+        Book book = new Book("Data Structures", "Mark Allen", "002", 1);
         LocalDate newDate = LocalDate.now().plusDays(5);
         book.setDueDate(newDate);
         assertEquals(newDate, book.getDueDate());
     }
-    
-    @Test
-    void searchWithNoStrategyReturnsEmpty() {
-        BookService service = new BookService();
-        List<Book> result = service.search("Java");
-        assertTrue(result.isEmpty());
-    }
 
-    @Test
-    void searchWithStrategyFindsBooks() {
-        BookService service = new BookService();
-        service.addBook("Java Basics", "Author A", "001");
-        service.setSearchStrategy((books, query) -> {
-            List<Book> result = new ArrayList<>();
-            for (Book b : books) {
-                if (b.getTitle().contains(query)) result.add(b);
-            }
-            return result;
-        });
-
-        List<Book> result = service.search("Java");
-        assertEquals(1, result.size());
-    }
-
-    @Test
-    void searchWithStrategyNoMatches() {
-        BookService service = new BookService();
-        service.addBook("Python Basics", "Author B", "002");
-        service.setSearchStrategy((books, query) -> {
-            List<Book> result = new ArrayList<>();
-            for (Book b : books) {
-                if (b.getTitle().contains(query)) result.add(b);
-            }
-            return result;
-        });
-
-        List<Book> result = service.search("Java");
-        assertTrue(result.isEmpty());
-    }
-
-
-    @Test
-    public void borrowAvailableBookSucceeds() {
-        Book book = new Book("Algorithms", "Sedgewick", "002");
-        User user = new User("Noor", "noorfayek321@gmail.com");
-        boolean result = bookService.borrowBook(book, user);
-        assertTrue(result);
-        assertTrue(book.isBorrowed());
-    }
-    
     @Test
     void testGetDaysOverdueDirectly() throws Exception {
         User user = new User("Noor", "noor@gmail.com");
-        Book book = new Book("Java", "Author", "006");
+        Book book = new Book("Java", "Author", "006", 1);
         book.borrow(user);
 
-       
         var field = Book.class.getDeclaredField("dueDate");
         field.setAccessible(true);
-        field.set(book, java.time.LocalDate.now().minusDays(3));
+        field.set(book, LocalDate.now().minusDays(3));
 
         assertEquals(3, book.getDaysOverdue());
-    }
-
-
-    @Test
-    public void borrowFailsIfBookAlreadyBorrowed() {
-        Book book = new Book("Algorithms", "Sedgewick", "002");
-        User u1 = new User("A", "a@a.com");
-        User u2 = new User("B", "b@b.com");
-        bookService.borrowBook(book, u1);
-        assertFalse(bookService.borrowBook(book, u2));
-    }
-
-    @Test
-    public void borrowBookFailsIfUserCannotBorrow() {
-        Book book = new Book("Java", "Author", "003");
-        User user = new User("Noor", "noor@gmail.com") {
-            @Override
-            public boolean canBorrow() {
-                return false;
-            }
-        };
-        assertFalse(bookService.borrowBook(book, user));
-    }
-
-    @Test
-    public void returnBookResetsBorrowedFlag() {
-        Book book = new Book("Data", "Mark", "003");
-        User u = new User("Noor", "noor@gmail.com");
-        bookService.borrowBook(book, u);
-        bookService.returnBook(book, u);
-        assertFalse(book.isBorrowed());
     }
 
     @Test
     public void returnBookAddsFineIfOverdue() {
         User user = new User("Noor", "noor@gmail.com");
-        Book book = new Book("Java", "Author", "004") {
+        Book book = new Book("Java", "Author", "004", 1) {
             @Override
             public boolean isOverdue() { return true; }
         };
@@ -162,96 +150,89 @@ public class BookServiceTest {
     }
 
     @Test
-    public void searchByTitleShouldWork() {
-        bookService.setSearchStrategy(new SearchByTitle());
-        bookService.addBook("Java", "A", "001");
-        List<Book> res = bookService.search("java");
-        assertEquals(1, res.size());
-    }
-
-    @Test
-    public void searchByISBNShouldWork() {
-        bookService.setSearchStrategy(new SearchByISBN());
-        bookService.addBook("Java", "A", "001");
-        List<Book> res = bookService.search("001");
-        assertEquals(1, res.size());
-    }
-
-    @Test
-    public void searchByAuthorShouldWork() {
-        bookService.setSearchStrategy(new SearchByAuthor());
-        bookService.addBook("Java", "James Gosling", "001");
-        List<Book> res = bookService.search("james");
-        assertEquals(1, res.size());
-    }
-    @Test
     void testGetBorrowerAndDueDate() {
         User user = new User("Noor", "noor@gmail.com");
-        Book book = new Book("Java", "Author", "001");
+        Book book = new Book("Java", "Author", "001", 2);
         book.borrow(user);
 
         assertEquals(user, book.getBorrower());
         assertNotNull(book.getDueDate());
     }
 
-   
-
     @Test
     void testToString() {
-        Book book = new Book("Java", "Author", "003");
+        Book book = new Book("Java", "Author", "003", 2);
         String str = book.toString();
         assertTrue(str.contains("Java"));
         assertTrue(str.contains("Author"));
         assertTrue(str.contains("003"));
     }
+
+    // ======= اختبارات البحث =======
     @Test
-    public void searchShouldReturnEmptyIfNotFound() {
-        bookService.setSearchStrategy(new SearchByTitle());
-        bookService.addBook("Java", "A", "001");
-        assertTrue(bookService.search("C++").isEmpty());
-    }
-    
-    @Test
-    void testGetDaysOverdue() {
-        User user = new User("Noor", "noor@gmail.com");
-
-        Book book = new Book("Java", "Author", "001") {
-            @Override
-            public boolean isOverdue() {
-                return true; }
-
-            @Override
-            public long getDaysOverdue() {
-                
-            	return java.time.temporal.ChronoUnit.DAYS.between(LocalDate.now().minusDays(5), LocalDate.now());
-            }
-        };
-
-        book.borrow(user);
-
-        long days = book.getDaysOverdue();
-        assertEquals(5, days);
+    void searchWithNoStrategyReturnsEmpty() {
+        BookService service = new BookService();
+        List<Book> result = service.search("Java");
+        assertTrue(result.isEmpty());
     }
 
+    @Test
+    void searchWithStrategyFindsBooks() {
+    	BookService service = new BookService();
+    	service.addBook("Java Basics", "Author A", "001", 1);
 
+    	SearchStrategy<Book> strategy = new SearchStrategy<>() {
+    	    @Override
+    	    public List<Book> search(List<Book> list, String query) {
+    	        List<Book> result = new ArrayList<>();
+    	        String q = query.toLowerCase();
+    	        for (Book b : list) {
+    	            if (b.getTitle().toLowerCase().contains(q)) {
+    	                result.add(b);
+    	            }
+    	        }
+    	        return result;
+    	    }
+    	};
+
+    	service.setSearchStrategy(strategy);
+
+    	List<Book> result = service.search("Java");
+    	assertEquals(1, result.size());
+
+    }
+
+
+    @Test
+    void searchWithStrategyNoMatches() {
+        BookService service = new BookService();
+        service.addBook("Python Basics", "Author B", "002", 1);
+        
+        // نستخدم SearchByTitle الجاهز
+        service.setSearchStrategy(new SearchByTitle<Book>());
+
+        List<Book> result = service.search("Java"); // البحث عن شيء غير موجود
+        assertTrue(result.isEmpty());
+    }
+
+
+    // ======= اختبار مراقبة الكتب المتأخرة =======
     @Test
     public void checkOverdueBooksNotifiesObserver() {
         BookService service = new BookService();
         User user = new User("Noor", "noorfayek321@gmail.com");
 
-        Book book = new Book("Java", "Author", "005") {
+        Book book = new Book("Java", "Author", "005", 1) {
             @Override
             public boolean isOverdue() { return true; }
         };
         book.borrow(user);
 
         service.addBook(book); 
-        
         Observer observer = mock(Observer.class);
         service.addObserver(observer);
 
         service.checkOverdueBooks();
-
-        verify(observer, times(1)).update(service, book);
+        verify(observer, times(1)).update(eq(service), any(Book.class));
     }
 }

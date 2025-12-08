@@ -16,11 +16,14 @@ public class ReminderService {
     }
 
     public void sendOverdueReminders(List<Loan> loans) {
-        
+
+        // خريطة لتخزين عدد الكتب المتأخرة لكل مستخدم
         Map<User, Integer> overdueCount = new HashMap<>();
 
         for (Loan loan : loans) {
+            // إذا الكتاب متأخر ولم يُرجع بعد
             if (!loan.isReturned() && loan.isOverdue()) {
+                // زيادة العدّاد للمستخدم
                 overdueCount.put(
                         loan.getUser(),
                         overdueCount.getOrDefault(loan.getUser(), 0) + 1
@@ -28,11 +31,11 @@ public class ReminderService {
             }
         }
 
-        
+        // إرسال إيميل واحد لكل مستخدم مع عدد الكتب المتأخرة
         for (Map.Entry<User, Integer> entry : overdueCount.entrySet()) {
             User user = entry.getKey();
-            int n = entry.getValue();
-            emailService.sendEmail(user, "You have " + n + " overdue book(s).");
+            int count = entry.getValue();
+            emailService.sendEmail(user, "You have " + count + " overdue book(s).");
         }
     }
 }

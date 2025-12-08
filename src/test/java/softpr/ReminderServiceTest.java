@@ -1,6 +1,5 @@
 package softpr;
 
-import model.Book;
 import model.User;
 import model.Loan;
 import org.junit.jupiter.api.BeforeEach;
@@ -8,8 +7,8 @@ import org.junit.jupiter.api.Test;
 import service.EmailService;
 import service.ReminderService;
 
-import java.util.ArrayList;
 import java.util.List;
+
 import static org.mockito.Mockito.*;
 
 public class ReminderServiceTest {
@@ -27,34 +26,59 @@ public class ReminderServiceTest {
 
     @Test
     public void shouldSendEmailForOverdueBook() {
-        Book b = new Book("Late Book", "Author", "001");
-        Loan loan = new Loan(b, user) {
-            @Override public boolean isOverdue() { return true; }
-            @Override public boolean isReturned() { return false; }
-        };
-        List<Loan> loans = List.of(loan);
-        reminderService.sendOverdueReminders(loans);
-        verify(emailService, times(1)).sendEmail(eq(user), contains("1 overdue book"));
+        Loan loan = mock(Loan.class);
+        when(loan.isOverdue()).thenReturn(true);
+        when(loan.isReturned()).thenReturn(false);
+        when(loan.getUser()).thenReturn(user);
+
+        reminderService.sendOverdueReminders(List.of(loan));
+
+        verify(emailService, times(1))
+                .sendEmail(eq(user), contains("1 overdue book"));
     }
 
     @Test
     public void shouldNotSendEmailIfNotOverdueOrReturned() {
-        Book b = new Book("On Time", "Author", "002");
-        Loan loan = new Loan(b, user) {
-            @Override public boolean isOverdue() { return false; }
-            @Override public boolean isReturned() { return true; }
-        };
+        Loan loan = mock(Loan.class);
+        when(loan.isOverdue()).thenReturn(false);
+        when(loan.isReturned()).thenReturn(true);
+        when(loan.getUser()).thenReturn(user);
+
         reminderService.sendOverdueReminders(List.of(loan));
+
         verify(emailService, never()).sendEmail(any(), any());
     }
 
     @Test
     public void shouldGroupMultipleOverdueBooksInOneEmail() {
-        Book b1 = new Book("B1", "A", "1");
-        Book b2 = new Book("B2", "A", "2");
-        Loan l1 = new Loan(b1, user) { public boolean isOverdue() { return true; } public boolean isReturned() { return false; } };
-        Loan l2 = new Loan(b2, user) { public boolean isOverdue() { return true; } public boolean isReturned() { return false; } };
-        reminderService.sendOverdueReminders(List.of(l1, l2));
-        verify(emailService, times(1)).sendEmail(eq(user), contains("2 overdue book"));
+        Loan loan1 = mock(Loan.class);
+        Loan loan2 = mock(Loan.class);
+
+        when(loan1.isOverdue()).thenReturn(true);
+        when(loan1.isReturned()).thenReturn(false);
+        when(loan1.getUser()).thenReturn(user);
+
+        when(loan2.isOverdue()).thenReturn(true);
+        when(loan2.isReturned()).thenReturn(false);
+        when(loan2.getUser()).thenReturn(user);
+
+        reminderService.sendOverdueReminders(List.of(loan1, loan2));
+
+        // نتأكد أن الإيميل واحد فقط يرسل ويحتوي على عدد 2
+        verify(emailService, times(1))
+                .sendEmail(eq(user), contains("2 overdue book"));
+    }
+
+    @Test
+    public void shouldSendEmailForOverdueCD() {
+        Loan loan = mock(Loan.class);
+        when(loan.isOverdue()).thenReturn(true);
+        when(loan.isReturned()).thenReturn(false);
+        when(loan.getUser()).thenReturn(user);
+
+        reminderService.sendOverdueReminders(List.of(loan));
+
+        verify(emailService, times(1))
+                .sendEmail(eq(user), contains("1 overdue book"));
     }
 }

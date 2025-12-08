@@ -21,6 +21,11 @@ public class Loan {
         media.borrow(user);
         user.addLoan(this);
     }
+    
+    private boolean fineAdded = false; // جديد
+
+    public boolean isFineAdded() { return fineAdded; }
+    public void setFineAdded(boolean added) { fineAdded = added; }
 
     public Media getMedia() { return media; }
     public User getUser() { return user; }

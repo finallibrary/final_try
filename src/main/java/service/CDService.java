@@ -9,18 +9,32 @@ import java.util.Observable;
 public class CDService extends Observable {
 
     private final List<CD> cds = new ArrayList<>();
-    private SearchStrategy searchStrategy;
+   
+    private SearchStrategy<CD> searchStrategy;
+    // إضافة CD مع كمية
+    public void addCD(String title, String artist, String id, int quantity) {
+        CD existing = cds.stream()
+                         .filter(c -> c.getId().equals(id))
+                         .findFirst()
+                         .orElse(null);
 
-    public void addCD(String title, String artist, String id) {
-        boolean exists = cds.stream().anyMatch(c -> c.getId().equals(id));
-        if (!exists) {
-            cds.add(new CD(title, artist, id));
+        if (existing != null) {
+            // زيادة الكمية إذا CD موجود
+            existing.setQuantity(existing.getQuantity() + quantity);
+        } else {
+            cds.add(new CD(title, artist, id, quantity));
         }
     }
 
     public void addCD(CD cd) {
-        boolean exists = cds.stream().anyMatch(c -> c.getId().equals(cd.getId()));
-        if (!exists) {
+        CD existing = cds.stream()
+                         .filter(c -> c.getId().equals(cd.getId()))
+                         .findFirst()
+                         .orElse(null);
+
+        if (existing != null) {
+            existing.setQuantity(existing.getQuantity() + cd.getQuantity());
+        } else {
             cds.add(cd);
         }
     }
@@ -32,25 +46,19 @@ public class CDService extends Observable {
     public void setSearchStrategy(SearchStrategy strategy) {
         this.searchStrategy = strategy;
     }
+    
+
     public List<CD> search(String query) {
-        List<CD> result = new ArrayList<>();
-        String q = query.toLowerCase();
-
-        for (CD cd : cds) {
-            if (cd.getTitle().toLowerCase().contains(q) ||
-                cd.getArtist().toLowerCase().contains(q) ||
-                cd.getId().toLowerCase().contains(q)) 
-            {
-                result.add(cd);
-            }
-        }
-
-        return result;
+        if (searchStrategy == null) return new ArrayList<>();
+        return searchStrategy.search(cds, query);
     }
 
+
+   
+    // استعاره تعتمد على quantity
     public boolean borrowCD(CD cd, User user) {
         if (!user.canBorrow()) return false;
-        if (!cd.isBorrowed()) {
+        if (cd.getQuantity() > 0) { // ← تحقق من الكمية المتاحة
             cd.borrow(user);
             return true;
         }
@@ -58,7 +66,8 @@ public class CDService extends Observable {
     }
 
     public void returnCD(CD cd, User user) {
-        if (cd.isBorrowed()) {
+        // تحقق من أن المستخدم هو المستعير (اختياري حسب منطقك)
+        if (cd.getBorrower() == user || cd.getQuantity() < 1) {
             if (cd.isOverdue()) user.addFine(cd.getFinePerDay());
             cd.returnMedia();
         }
@@ -66,7 +75,7 @@ public class CDService extends Observable {
 
     public void checkOverdueCDs() {
         for (CD cd : cds) {
-            if (cd.isBorrowed() && cd.isOverdue()) {
+            if (cd.getQuantity() < 1 && cd.isOverdue()) { // ← كمية = 0 تعني كل النسخ مستعارة
                 setChanged();
                 notifyObservers(cd);
             }

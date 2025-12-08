@@ -1,6 +1,7 @@
 package service;
 
 import model.User;
+import model.Book;
 import model.Loan;
 
 public class UserService {
@@ -13,26 +14,35 @@ public class UserService {
         user.payFine(amount);
     }
 
-    public boolean canBorrow(User user) {
-        return user.canBorrow();
+    
+    public boolean canBorrow(User user, Book book) {
+        if (book.getQuantity() <= 0) {
+            return false; // لا توجد نسخ متاحة
+        }
+        if (user.getFineBalance() > 0) {
+            return false; // يوجد غرامة
+        }
+        for (Loan l : user.getLoans()) {
+            if (l.isOverdue()) return false; // يوجد كتب متأخرة
+        }
+        return true; // يمكن الاستعارة
     }
 
-    public String getBorrowStatus(User user) {
-        if (user.getFineBalance() > 0) {
-            return "You cannot borrow a new book because you have unpaid fines.";
-        }
-        if (userHasOverdueBooks(user)) {
+
+    public String getBorrowStatus(User user, Book book) {
+    if (book.getQuantity() <= 0) {
+        return "You cannot borrow a new book because all copies are borrowed or overdue.";
+    }
+    if (user.getFineBalance() > 0) {
+        return "You cannot borrow a new book because you have unpaid fines.";
+    }
+    for (Loan l : user.getLoans()) {
+        if (l.isOverdue()) {
             return "You cannot borrow a new book because you have overdue books.";
         }
-        return "You can borrow books.";
     }
+    return "You can borrow books.";
+}
 
-    private boolean userHasOverdueBooks(User user) {
-        for (Loan l : user.getLoans()) {
-            if (l.isOverdue()) return true;
-        }
-        return false;
-    }
-
-   
+    
 }
