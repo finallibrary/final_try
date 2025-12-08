@@ -11,16 +11,19 @@
     <packaging>jar</packaging>
 
     <properties>
+
+             
         <maven.compiler.release>17</maven.compiler.release>
                <maven.compiler.target>17</maven.compiler.target>
+             <sonar.organization>finallibrary</sonar.organization>
+    <sonar.host.url>https://sonarcloud.io</sonar.host.url>
+    <sonar.projectKey>finallibrary_final_try</sonar.projectKey>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <junit.jupiter.version>5.11.3</junit.jupiter.version>
         <mockito.version>5.20.0</mockito.version>
         <!-- JaCoCo أحدث إصدار يدعم Java 22 رسميًا -->
         <jacoco.version>0.8.12</jacoco.version>
-              <sonar.organization>finallibrary</sonar.organization>
-    <sonar.host.url>https://sonarcloud.io</sonar.host.url>
-    <sonar.projectKey>finallibrary_final_try</sonar.projectKey>
+              
     </properties>
 
     <dependencies>
