@@ -11,9 +11,14 @@ public class User {
     private final List<Loan> loans = new ArrayList<>();
 
     public User(String name, String email) {
+        if (email == null || !email.contains("@")) {
+            throw new IllegalArgumentException("Invalid email format: must contain @");
+        } 
+
         this.name = name;
         this.email = email;
     }
+
 
     public String getName() { return name; }
     public String getEmail() { return email; }

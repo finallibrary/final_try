@@ -16,7 +16,7 @@ public class CaseInsensitiveCDSearch implements SearchStrategy<CD> {
         for (CD cd : cds) {
             if (cd.getTitle().toLowerCase().contains(lowerQuery)
                 || cd.getAuthor().toLowerCase().contains(lowerQuery)
-                || cd.getId().toLowerCase().contains(lowerQuery)) {
+                || cd.getIsbn().toLowerCase().contains(lowerQuery)) {
                 results.add(cd);
             }
         }

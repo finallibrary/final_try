@@ -9,17 +9,15 @@ import java.util.Observable;
 public class CDService extends Observable {
 
     private final List<CD> cds = new ArrayList<>();
-   
     private SearchStrategy<CD> searchStrategy;
-    // إضافة CD مع كمية
+
     public void addCD(String title, String artist, String id, int quantity) {
         CD existing = cds.stream()
-                         .filter(c -> c.getId().equals(id))
+                         .filter(c -> c.getIsbn().equals(id))
                          .findFirst()
                          .orElse(null);
 
         if (existing != null) {
-            // زيادة الكمية إذا CD موجود
             existing.setQuantity(existing.getQuantity() + quantity);
         } else {
             cds.add(new CD(title, artist, id, quantity));
@@ -28,7 +26,7 @@ public class CDService extends Observable {
 
     public void addCD(CD cd) {
         CD existing = cds.stream()
-                         .filter(c -> c.getId().equals(cd.getId()))
+                         .filter(c -> c.getIsbn().equals(cd.getIsbn()))
                          .findFirst()
                          .orElse(null);
 
@@ -46,36 +44,41 @@ public class CDService extends Observable {
     public void setSearchStrategy(SearchStrategy strategy) {
         this.searchStrategy = strategy;
     }
-    
 
     public List<CD> search(String query) {
-        if (searchStrategy == null) return new ArrayList<>();
+        if (searchStrategy == null) {
+            return new ArrayList<>();
+        }
         return searchStrategy.search(cds, query);
     }
 
-
-   
-    // استعاره تعتمد على quantity
     public boolean borrowCD(CD cd, User user) {
-        if (!user.canBorrow()) return false;
-        if (cd.getQuantity() > 0) { // ← تحقق من الكمية المتاحة
+        if (!user.canBorrow()) {
+            return false;
+        }
+
+        if (cd.getQuantity() > 0) {
             cd.borrow(user);
             return true;
         }
+
         return false;
     }
 
     public void returnCD(CD cd, User user) {
-        // تحقق من أن المستخدم هو المستعير (اختياري حسب منطقك)
-        if (cd.getBorrower() == user || cd.getQuantity() < 1) {
-            if (cd.isOverdue()) user.addFine(cd.getFinePerDay());
+        boolean canReturn = cd.getBorrower() == user || cd.getQuantity() < 1;
+
+        if (canReturn) {
+            if (cd.isOverdue()) {
+                user.addFine(cd.getFinePerDay());
+            }
             cd.returnMedia();
         }
     }
 
     public void checkOverdueCDs() {
         for (CD cd : cds) {
-            if (cd.getQuantity() < 1 && cd.isOverdue()) { // ← كمية = 0 تعني كل النسخ مستعارة
+            if (cd.getQuantity() < 1 && cd.isOverdue()) {
                 setChanged();
                 notifyObservers(cd);
             }

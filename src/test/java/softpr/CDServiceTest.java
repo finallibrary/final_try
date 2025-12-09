@@ -23,7 +23,6 @@ class CDServiceTest {
     void setUp() {
         cdService = new CDService();
         cdService.setSearchStrategy(new CaseInsensitiveCDSearch());
-
         user = new User("Noor", "noorfayek321@gmail.com");
     }
 
@@ -58,7 +57,7 @@ class CDServiceTest {
         assertEquals(user, cd.getBorrower());
 
         User anotherUser = new User("Ali", "ali@example.com");
-        assertFalse(cdService.borrowCD(cd, anotherUser)); // لا يمكن استعارة نسخة أخرى
+        assertFalse(cdService.borrowCD(cd, anotherUser));
     }
 
     @Test
@@ -119,7 +118,7 @@ class CDServiceTest {
         cdService.returnCD(cd, user);
 
         assertFalse(cd.isBorrowed());
-        assertTrue(user.getFineBalance() > fineBefore); // يجب أن يزيد الغرامة
+        assertTrue(user.getFineBalance() > fineBefore);
     }
 
     @Test

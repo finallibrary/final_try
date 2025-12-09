@@ -11,18 +11,12 @@
     <packaging>jar</packaging>
 
     <properties>
-
-             
-        <maven.compiler.release>17</maven.compiler.release>
-               <maven.compiler.target>17</maven.compiler.target>
-            
+        <maven.compiler.release>22</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <junit.jupiter.version>5.11.3</junit.jupiter.version>
         <mockito.version>5.20.0</mockito.version>
-               <sonar.organization>finallibrary</sonar.organization>
         <!-- JaCoCo أحدث إصدار يدعم Java 22 رسميًا -->
         <jacoco.version>0.8.12</jacoco.version>
-              
     </properties>
 
     <dependencies>
@@ -79,7 +73,7 @@
             <artifactId>maven-compiler-plugin</artifactId>
             <version>3.13.0</version>
             <configuration>
-                <release>17</release>
+                <release>22</release>
             </configuration>
             
         </plugin>
@@ -88,7 +82,12 @@
         <plugin>
             <groupId>org.jacoco</groupId>
             <artifactId>jacoco-maven-plugin</artifactId>
-              <version>0.8.12</version>
+            <version>0.8.12</version>
+            <configuration>
+    <excludes>
+        <exclude>exception/*</exclude>
+    </excludes>
+</configuration>
 
             <executions>
                 <execution>
@@ -99,8 +98,8 @@
                 </execution>
                 
                 <execution>
-                    <id>generate-report</id>
-                    <phase>verify</phase>
+                    <id>report</id>
+                    <phase>test</phase>
                     <goals>
                         <goal>report</goal>
                     </goals>

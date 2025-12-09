@@ -3,9 +3,7 @@ package softpr;
 import jakarta.mail.*;
 import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
-
 import model.User;
-
 import java.util.Properties;
 
 public class EmailService {
@@ -32,7 +30,6 @@ public class EmailService {
         });
     }
 
-    // ========= إرسال باستخدام User ===========
     public void sendEmail(User user, String body) {
         if (user == null || user.getEmail() == null) {
             System.out.println("Invalid user or email.");
@@ -41,7 +38,6 @@ public class EmailService {
         sendEmail(user.getEmail(), "Library Notification", body);
     }
 
-    // ========= إرسال باستخدام معلومات كاملة ===========
     public void sendEmail(String to, String subject, String body) {
         try {
             Message message = new MimeMessage(session);
@@ -53,13 +49,10 @@ public class EmailService {
             message.setSubject(subject);
             message.setText(body);
 
-            // هنا الموك رح يمسك ال Transport.send()
             Transport.send(message);
 
         } catch (MessagingException e) {
             System.out.println("Failed to send email: " + e.getMessage());
-            // ⚠️ أهم نقطة:
-            // لا نرمي الاستثناء → عشان التست testSendEmailFailsWithException ما يفشل
         } catch (Exception e) {
             System.out.println("Unexpected error while sending email: " + e.getMessage());
         }

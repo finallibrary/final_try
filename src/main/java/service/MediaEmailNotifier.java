@@ -19,7 +19,6 @@ public class MediaEmailNotifier implements Observer {
 
         if (arg instanceof User user) {
 
-            // نجمع أسماء الميديا المتأخرة
             StringBuilder mediaList = new StringBuilder();
 
             for (Loan loan : user.getLoans()) {
@@ -29,7 +28,6 @@ public class MediaEmailNotifier implements Observer {
                 }
             }
 
-           
             if (mediaList.length() == 0) {
                 return;
             }

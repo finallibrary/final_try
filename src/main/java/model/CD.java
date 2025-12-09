@@ -1,9 +1,9 @@
 package model;
 
 import java.time.LocalDate;
-import java.util.List;
 
 public class CD implements Media {
+
     private final String title;
     private final String artist;
     private boolean borrowed = false;
@@ -12,41 +12,57 @@ public class CD implements Media {
 
     private String id;
     private double fine;
-
-    private int quantity;   // ← الكمية الجديدة
+    private int quantity;
 
     public CD(String title, String artist, String id, int quantity) {
         this.title = title;
         this.artist = artist;
         this.id = id;
+        this.quantity = quantity;
         this.borrowed = false;
         this.fine = 0;
-        this.quantity = quantity;   // ← تخزين الكمية
     }
-    
-   
 
+    public String getTitle() { 
+        return title; 
+    }
 
-    public String getTitle() { return title; }
-    public String getAuthor() { return artist; }
-    public String getId() { return id; }
+    public String getAuthor() { 
+        return artist; 
+    }
 
-    public boolean isBorrowed() { return borrowed; }
-    public LocalDate getDueDate() { return dueDate; }
-    public User getBorrower() { return borrower; }
+    public boolean isBorrowed() { 
+        return borrowed; 
+    }
 
-    public int getQuantity() { return quantity; }             // ← getter
-    public void setQuantity(int quantity) { this.quantity = quantity; } // ← setter
+    public LocalDate getDueDate() { 
+        return dueDate; 
+    }
+
+    public User getBorrower() { 
+        return borrower; 
+    }
+
+    public int getQuantity() { 
+        return quantity; 
+    }
+
+    public void setQuantity(int quantity) { 
+        this.quantity = quantity; 
+    }
+
     @Override
-    public String getIsbn() { return id; }
+    public String getIsbn() { 
+        return id; 
+    }
+
     @Override
     public void borrow(User user) {
         if (quantity <= 0) {
             throw new IllegalStateException("CD is out of stock!");
         }
 
-        quantity--;     // ← نقص الكمية
-
+        quantity--;
         borrowed = true;
         borrower = user;
         dueDate = LocalDate.now().plusDays(7);
@@ -58,8 +74,7 @@ public class CD implements Media {
     }
 
     public void returnCD() {
-        quantity++;     // ← رجّع الكمية
-
+        quantity++;
         borrowed = false;
         borrower = null;
         dueDate = null;

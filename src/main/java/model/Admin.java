@@ -17,6 +17,6 @@ public class Admin {
     }
 
     public boolean checkPassword(String inputPassword) {
-        return BCrypt.checkpw(inputPassword, this.passwordHash);
+        return BCrypt.checkpw(inputPassword, passwordHash);
     }
 }

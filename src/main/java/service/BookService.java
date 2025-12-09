@@ -10,11 +10,12 @@ public class BookService extends Observable {
     private final List<Book> books = new ArrayList<>();
     private SearchStrategy<Book> searchStrategy;
 
-
     public void addBook(String title, String author, String isbn, int quantity) {
         boolean exists = books.stream().anyMatch(b -> b.getIsbn().equals(isbn));
-        if (exists) return;  // لو الكتاب موجود، ما نضيفه
-        books.add(new Book(title, author, isbn, quantity)); // ← استخدم الكمية
+        if (exists) {
+            return;
+        }
+        books.add(new Book(title, author, isbn, quantity));
     }
 
     public void addBook(Book book) {
@@ -33,27 +34,35 @@ public class BookService extends Observable {
     }
 
     public List<Book> search(String query) {
-        if (searchStrategy == null) return new ArrayList<>();
+        if (searchStrategy == null) {
+            return new ArrayList<>();
+        }
         return searchStrategy.search(books, query);
     }
 
     public boolean borrowBook(Book book, model.User user) {
-        if (!user.canBorrow()) return false;
-        if (book.getQuantity() > 0) {          // ← تحقق من الكمية المتاحة
-            book.borrow(user);                  // يقلل الكمية داخليًا
+        if (!user.canBorrow()) {
+            return false;
+        }
+
+        if (book.getQuantity() > 0) {
+            book.borrow(user);
             return true;
         }
-        return false;                           // لا يوجد نسخ متاحة للاستعارة
+
+        return false;
     }
 
     public void returnBook(Book book, model.User user) {
-        if (book.getQuantity() < 1 || book.getBorrower() == user) {  
-            // زيادة الكمية عند الإرجاع
-            if (book.isOverdue()) user.addFine(5.0);
+        boolean canReturn = book.getQuantity() < 1 || book.getBorrower() == user;
+
+        if (canReturn) {
+            if (book.isOverdue()) {
+                user.addFine(5.0);
+            }
             book.returnBook();
         }
     }
-
 
     public void checkOverdueBooks() {
         for (Book book : books) {
